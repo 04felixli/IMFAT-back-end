@@ -1,9 +1,9 @@
 // This is the main file
+import express, { Express, Request, Response, NextFunction } from 'express';
 
-const express = require('express');
+const app: Express = express();
+const PORT: number | string = process.env.PORT || 5000;
 require('dotenv').config();
-const app = express();
-const PORT = process.env.PORT || 5000;
 const cors = require('cors'); // Import cors module
 
 // Middleware setup - Order matters!
@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(cors());
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction): void => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
 });
