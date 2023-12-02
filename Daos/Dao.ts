@@ -1,7 +1,6 @@
 // This class handles all database interactions
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import ModelExercise from '../ModelsPOST/ModelPOSTExercisesDoneInWorkout';
 import ModelPreviousSet from '../ModelsGET/ModelPreviousSet';
 import ModelWorkoutHistory from '../ModelsGET/ModelWorkoutHistory';
 import ModelExerciseHistory from '../ModelsGET/ModelExerciseHistory';
@@ -13,6 +12,7 @@ import ModelPostCompletedExercise from '../ModelsPOST/ModelPostCompletedExercise
 import { Database } from '../database.types';
 import ModelPostCompletedSet from '../ModelsPOST/ModelPostCompletedSet';
 import ModelPostedExercise from '../ModelsPOST/ModelPostedExercise';
+import ModelPostedSet from '../ModelsPOST/ModelPostedSet';
 require('dotenv').config();
 
 class Dao {
@@ -104,13 +104,13 @@ class Dao {
     }
 
     // Post completed sets for exercises posted in postCompletedExercisesToDB() to "sets" table. 
-    async postCompletedSetsToDB(sets: ModelPostCompletedSet[]): Promise<ModelPostCompletedSet[]> {
+    async postCompletedSetsToDB(sets: ModelPostCompletedSet[]): Promise<ModelPostedSet[]> {
         try {
 
             const { data, error } = await this.supabase.from('sets')
                 .insert(sets)
                 .select()
-                .returns<ModelPostCompletedSet[]>();
+                .returns<ModelPostedSet[]>();
 
             if (error) {
                 throw new Error(`Database error: ${error.message}`);
@@ -124,49 +124,48 @@ class Dao {
         }
     }
 
-    // // Post completed sets for exercises posted in postCompletedExercisesToDB() to "sets" table. 
-    // async getPreviousSetFromDB(exercise_id, datetime, set_number) {
-    //     try {
+    // Post completed sets for exercises posted in postCompletedExercisesToDB() to "sets" table. 
+    async getPreviousSetFromDB(exercise_id: number, set_number: number): Promise<ModelPreviousSet | null> {
+        try {
 
-    //         // we get the set with the same set number and exercise id and closest date and return:
-    //         //      weight, reps, weight_unit
-    //         const { data: sets, error } = await this.supabase
-    //             .from('sets')
-    //             .select(
-    //                 `set_number, 
-    //                 reps,
-    //                 weight,
-    //                 weight_unit,
-    //                 exercises_done_in_workout!inner (
-    //                     exercise_id
-    //                 )`
-    //             )
-    //             // .lt('created_at', datetime)
-    //             .eq('set_number', set_number)
-    //             .eq('exercises_done_in_workout.exercise_id', exercise_id)
-    //             .order('created_at', { ascending: false })
-    //             .limit(1)
-    //             .single();
+            // we get the set with the same set number and exercise id and closest date and return:
+            //      weight, reps, weight_unit
+            const { data: sets, error } = await this.supabase
+                .from('sets')
+                .select(
+                    `set_number, 
+                    reps,
+                    weight,
+                    weight_unit,
+                    exercises_done_in_workout!inner (
+                        exercise_id
+                    )`
+                )
+                // .lt('created_at', datetime)
+                .eq('set_number', set_number)
+                .eq('exercises_done_in_workout.exercise_id', exercise_id)
+                .order('created_at', { ascending: false })
+                .limit(1);
 
-    //         // If we don't find a previous set, return empty array
-    //         if (sets === null) {
-    //             return [];
-    //         }
+            if (error) {
+                throw new Error(`Database error: ${error.message}`);
+            }
 
-    //         if (error) {
-    //             throw new Error(`Database error: ${error.message}`);
-    //         }
+            if (sets.length === 0) {
+                return null;
+            }
 
-    //         const { weight, reps, weight_unit } = sets;
+            const { weight, reps, weight_unit } = sets[0];
 
-    //         const prev_set = new ModelPreviousSet(weight, reps, weight_unit)
+            const prev_set = new ModelPreviousSet(weight, reps, weight_unit)
 
-    //         return prev_set;
+            return prev_set;
 
-    //     } catch (error) {
-    //         throw new Error(`Database error: ${error.message}`);
-    //     }
-    // }
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Database error: ${errorMessage}`);
+        }
+    }
 
     // // Get all past workouts 
     // async getWorkoutHistoryFromDB() {
@@ -230,4 +229,4 @@ class Dao {
     // Other database interaction methods...
 }
 
-module.exports = Dao;
+export default Dao;

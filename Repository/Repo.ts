@@ -1,8 +1,6 @@
 // This class handles "business" logic and calls Dao.js to handle database related actions
 
-import ModelPOSTExercisesDoneInWorkout from "../ModelsPOST/ModelPOSTExercisesDoneInWorkout";
 import ModelExerciseInList from "../ModelsGET/ModelExerciseInList";
-import ModelPOSTSet from "../ModelsPOST/ModelPOSTSet";
 import ModelCompletedWorkout from "../ModelsPOST/ModelCompletedWorkout";
 import ModelPostCompletedWorkout from "../ModelsPOST/ModelPostCompletedWorkout";
 import ModelPostedWorkout from "../ModelsPOST/ModelPostedWorkout";
@@ -12,10 +10,8 @@ import ModelCompletedSet from "../ModelsPOST/ModelCompletedSet";
 import ModelPostedExercise from "../ModelsPOST/ModelPostedExercise";
 import ModelPostCompletedSet from "../ModelsPOST/ModelPostCompletedSet";
 import ModelPostedSet from "../ModelsPOST/ModelPostedSet";
-
-
-const Dao = require('../Daos/Dao');
-const ModelWorkout = require('../ModelsPOST/ModelWorkout');
+import ModelPreviousSet from "../ModelsGET/ModelPreviousSet";
+import Dao from '../Daos/Dao';
 
 class Repo {
 
@@ -35,20 +31,21 @@ class Repo {
         }
     }
 
-    // // Get the list of exercises 
-    // async getPreviousSet(exercise_id, datetime, set_number) {
-    //     try {
+    // Get the list of exercises 
+    async getPreviousSet(exercise_id: number, set_number: number): Promise<ModelPreviousSet | null> {
+        try {
 
-    //         const dao = new Dao();
+            const dao = new Dao();
 
-    //         const prev_set = await dao.getPreviousSetFromDB(exercise_id, datetime, set_number);
+            const prev_set: ModelPreviousSet | null = await dao.getPreviousSetFromDB(exercise_id, set_number);
 
-    //         return prev_set;
+            return prev_set;
 
-    //     } catch (error) {
-    //         throw new Error(`Error fetching exercises: ${error.message}`);
-    //     }
-    // }
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Error fetching exercises: ${errorMessage}`);
+        }
+    }
 
     // Post a workout
     async postWorkout(req: { body: any }): Promise<void> {
