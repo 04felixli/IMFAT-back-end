@@ -65,29 +65,30 @@ class Repo {
 
             const postedWorkoutId: number = postedWorkout.id;
 
-            const exercisesToPost: ModelPostCompletedExercise[] = [];
+            // const exercisesToPost: ModelPostCompletedExercise[] = [];
             const exerciseSets: ModelCompletedSet[][] = [];
-            const setsCompleted: ModelPostCompletedSet[] = [];
+            // const setsCompleted: ModelPostCompletedSet[] = [];
 
             // We link each exercise completed to a workout id 
-            exercises.forEach((exercise: ModelCompletedExercise) => {
+            const exercisesToPost: ModelPostCompletedExercise[] = exercises.map((exercise: ModelCompletedExercise) => {
                 const { id, notes, sets } = exercise;
                 const exerciseToPost = new ModelPostCompletedExercise(id, postedWorkoutId, notes);
-                exercisesToPost.push(exerciseToPost);
                 exerciseSets.push(sets);
+                return exerciseToPost
             });
 
             const postedExercises: ModelPostedExercise[] = await dao.postCompletedExercisesToDB(exercisesToPost);
 
             // we link each set to an exercise completed id from a workout  
-            postedExercises.forEach((exercise: ModelPostedExercise, index: number) => {
+            const setsCompleted: ModelPostCompletedSet[] = postedExercises.flatMap((exercise: ModelPostedExercise, index: number) => {
                 const sets: ModelCompletedSet[] = exerciseSets[index]; // Get the sets for the current exercise
 
-                sets.forEach((set: ModelCompletedSet) => {
+                const setsToPost: ModelPostCompletedSet[] = sets.map((set: ModelCompletedSet) => {
                     const { weight, reps, weight_unit, set_number } = set;
-                    const setsToPost = new ModelPostCompletedSet(weight, reps, weight_unit, set_number, exercise.id);
-                    setsCompleted.push(setsToPost);
+                    return new ModelPostCompletedSet(weight, reps, weight_unit, set_number, exercise.id);
                 });
+
+                return setsToPost;
             });
 
             const postedSets: ModelPostedSet[] = await dao.postCompletedSetsToDB(setsCompleted);
