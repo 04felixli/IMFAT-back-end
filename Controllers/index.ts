@@ -58,20 +58,55 @@ router.get('/get_previous_set', async (req: Request, res: Response) => {
     }
 });
 
-// // Route to get the workout history 
-// router.get('/get_workout_history', async (req: Request, res: Response) => {
-//     try {
-//         const repo = new Repo();
+// Route to get the ALL workout history in detail - only for testing purposes
+router.get('/get_all_workout_history_detailed', async (req: Request, res: Response) => {
+    try {
+        const repo = new Repo();
 
-//         const workouts = await repo.getWorkoutHistory();
+        const workouts = await repo.getAllWorkoutHistoryDetails();
 
-//         res.json(workouts);
+        res.json(workouts);
 
-//     } catch (error) {
-//         // Type assertion to specify the error type as any
-//         const errorMessage: string = (error as any).message || 'An error occurred';
-//         res.status(500).json({ error: errorMessage });
-//     }
-// });
+    } catch (error) {
+        // Type assertion to specify the error type as any
+        const errorMessage: string = (error as any).message || 'An error occurred';
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// Route to get workout history - no details  
+router.get('/get_workout_history_without_details', async (req: Request, res: Response) => {
+    try {
+        const repo = new Repo();
+
+        const workouts = await repo.getWorkoutHistoryWithoutDetails();
+
+        res.json(workouts);
+
+    } catch (error) {
+        // Type assertion to specify the error type as any
+        const errorMessage: string = (error as any).message || 'An error occurred';
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// Route to get a single workout history with details by a workout id   
+router.get('/get_workout_history_by_workoutId', async (req: Request, res: Response) => {
+    try {
+        const repo = new Repo();
+
+        const workoutId: number = parseInt(req.query.workout_id as string); // get the exercise id of the set 
+
+
+        const workout = await repo.getWorkoutHistoryByWorkoutId(workoutId);
+
+        res.json(workout);
+
+    } catch (error) {
+        // Type assertion to specify the error type as any
+        const errorMessage: string = (error as any).message || 'An error occurred';
+        res.status(500).json({ error: errorMessage });
+    }
+});
 
 module.exports = router;

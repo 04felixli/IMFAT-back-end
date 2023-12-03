@@ -11,7 +11,9 @@ import ModelPostedExercise from "../ModelsPOST/ModelPostedExercise";
 import ModelPostCompletedSet from "../ModelsPOST/ModelPostCompletedSet";
 import ModelPostedSet from "../ModelsPOST/ModelPostedSet";
 import ModelPreviousSet from "../ModelsGET/ModelPreviousSet";
+import ModelPastExercise from "../ModelsGET/ModelPastExercise";
 import Dao from '../Daos/Dao';
+import ModelPastWorkout from "../ModelsGET/ModelPastWorkout";
 
 class Repo {
 
@@ -31,7 +33,7 @@ class Repo {
         }
     }
 
-    // Get the list of exercises 
+    // Get latest set completed given an exercise and set number
     async getPreviousSet(exercise_id: number, set_number: number): Promise<ModelPreviousSet | null> {
         try {
 
@@ -96,20 +98,55 @@ class Repo {
         }
     }
 
-    // // Get the list of exercises 
-    // async getWorkoutHistory() {
-    //     try {
+    // Get all workout history in detail 
+    async getAllWorkoutHistoryDetails(): Promise<ModelPastWorkout<ModelPastExercise>[]> {
+        try {
 
-    //         const dao = new Dao();
+            const dao = new Dao();
 
-    //         const workouts = await dao.getWorkoutHistoryFromDB();
+            const workouts: ModelPastWorkout<ModelPastExercise>[] = await dao.getAllWorkoutHistoryDetailsFromDB();
 
-    //         return workouts;
+            return workouts;
 
-    //     } catch (error) {
-    //         throw new Error(`Error fetching exercises: ${error.message}`);
-    //     }
-    // }
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Error posting exercises: ${errorMessage}`);
+        }
+    }
+
+    // Get workout history without detail
+    async getWorkoutHistoryWithoutDetails(): Promise<ModelPastWorkout<string>[]> {
+        try {
+
+            const dao = new Dao();
+
+            const workouts: ModelPastWorkout<string>[] = await dao.getWorkoutHistoryWithoutDetailsFromDB();
+
+            return workouts;
+
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Error posting exercises: ${errorMessage}`);
+        }
+    }
+
+    // Get a single workout history by workout id
+    async getWorkoutHistoryByWorkoutId(workoutId: number): Promise<ModelPastWorkout<ModelPastExercise>> {
+        try {
+
+            const dao = new Dao();
+
+            const workout: ModelPastWorkout<ModelPastExercise> = await dao.getWorkoutHistoryByWorkoutIdFromDB(workoutId);
+
+            return workout;
+
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Error posting exercises: ${errorMessage}`);
+        }
+    }
+
+
 }
 
 export default Repo;

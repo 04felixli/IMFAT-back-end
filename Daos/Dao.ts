@@ -13,6 +13,9 @@ import { Database } from '../database.types';
 import ModelPostCompletedSet from '../ModelsPOST/ModelPostCompletedSet';
 import ModelPostedExercise from '../ModelsPOST/ModelPostedExercise';
 import ModelPostedSet from '../ModelsPOST/ModelPostedSet';
+import ModelPastExercise from '../ModelsGET/ModelPastExercise';
+import ModelPastSet from '../ModelsGET/ModelPastSet';
+import ModelPastWorkout from '../ModelsGET/ModelPastWorkout';
 require('dotenv').config();
 
 class Dao {
@@ -167,64 +170,141 @@ class Dao {
         }
     }
 
-    // // Get all past workouts 
-    // async getWorkoutHistoryFromDB() {
-    //     try {
+    // Get all past workouts 
+    async getAllWorkoutHistoryDetailsFromDB(): Promise<ModelPastWorkout<ModelPastExercise>[]> {
+        try {
 
-    //         const { data, error } = await this.supabase
-    //             .from('workouts')
-    //             .select(
-    //                 `workout_type, 
-    //                 workout_date,
-    //                 duration,
-    //                 workout_name,
-    //                 exercises_done_in_workout!inner (exercise_info : all_exercises!inner (name, equipment), notes, sets(weight, reps, weight_unit, set_number)
-    //                 )`
-    //             ).order('workout_date', { ascending: false });
+            const { data, error } = await this.supabase
+                .from('workouts')
+                .select(
+                    `
+                    id, 
+                    workout_type, 
+                    workout_date,
+                    duration, 
+                    workout_name,
+                    exercises_done_in_workout!inner (exercise_info : all_exercises!inner (name, equipment), notes, sets(weight, reps, weight_unit, set_number)
+                    )`
+                ).order('id', { ascending: false })
+                .returns<ModelPastWorkout<ModelPastExercise>[]>();
 
-    //         // If we don't find any past workouts, return the empty array
-    //         if (data.length === 0) {
-    //             return data;
-    //         }
+            if (error) {
+                throw new Error(`Database error: ${error.message}`);
+            }
 
-    //         if (error) {
-    //             throw new Error(`Database error: ${error.message}`);
-    //         }
+            // If we don't find any past workouts, return the empty array
+            if (data.length === 0) {
+                return data;
+            }
 
-    //         const workoutHistoryArray = []; // Array of ModelWorkoutHistory objects
+            return data;
 
-    //         data.forEach(past_workout => {
-    //             const { workout_type, workout_date, duration, workout_name, exercises_done_in_workout } = past_workout;
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Database error: ${errorMessage}`);
+        }
+    }
 
-    //             const exerciseArray = []; // Array of ModelExerciseHistory objects
+    // Get all past workouts without details
+    async getWorkoutHistoryWithoutDetailsFromDB(): Promise<ModelPastWorkout<string>[]> {
+        try {
+            const { data, error } = await this.supabase
+                .from('workouts')
+                .select(
+                    `
+                    id,
+                    workout_type, 
+                    workout_date,
+                    duration, 
+                    workout_name,
+                    exercises_done_in_workout!inner (exercise_info : all_exercises!inner (name))`
+                ).order('id', { ascending: false })
 
-    //             exercises_done_in_workout.forEach(exercise => {
-    //                 const { notes, exercise_info, sets } = exercise;
-    //                 const { name, equipment } = exercise_info;
+            if (error) {
+                throw new Error(`Database error: ${error.message}`);
+            }
 
-    //                 const setArray = []; // Array of ModelSetHistory objects
+            const pastWorkouts: ModelPastWorkout<string>[] = data?.map(workout => {
+                const { id, workout_type, workout_date, workout_name, duration, exercises_done_in_workout } = workout;
 
-    //                 sets.forEach(set => {
-    //                     const { weight, reps, weight_unit, set_number } = set;
+                // Map exercises for each workout to get an array of exercise names
+                const exercises: string[] = exercises_done_in_workout.map(exercise => exercise?.exercise_info?.name || '');
 
-    //                     const modelSet = new ModelSetHistory(weight, reps, weight_unit, set_number);
-    //                     setArray.push(modelSet);
-    //                 })
+                // Create a new ModelPastWorkout instance with exercise names as strings
+                const pastWorkout: ModelPastWorkout<string> = new ModelPastWorkout<string>(
+                    id,
+                    workout_type,
+                    workout_date,
+                    workout_name,
+                    duration,
+                    exercises
+                );
 
-    //                 const modelExercise = new ModelExerciseHistory(name, equipment, notes, setArray);
-    //                 exerciseArray.push(modelExercise);
-    //             })
+                return pastWorkout;
+            });
 
-    //             const modelWorkout = new ModelWorkoutHistory(workout_type, workout_date, duration, workout_name, exerciseArray);
-    //             workoutHistoryArray.push(modelWorkout);
-    //         })
+            // If we don't find any past workouts, return the empty array
+            if (data.length === 0) {
+                return [];
+            }
 
-    //         return workoutHistoryArray;
+            return pastWorkouts;
 
-    //     } catch (error) {
-    //         throw new Error(`Database error: ${error.message}`);
-    //     }
-    // }
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Database error: ${errorMessage}`);
+        }
+    }
+
+    // Get all past workouts 
+    async getWorkoutHistoryByWorkoutIdFromDB(workoutId: number): Promise<ModelPastWorkout<ModelPastExercise>> {
+        try {
+            const { data, error } = await this.supabase
+                .from('workouts')
+                .select(
+                    `
+                    id, 
+                    workout_type, 
+                    workout_date,
+                    duration, 
+                    workout_name,
+                    exercises_done_in_workout!inner (exercise_info : all_exercises!inner (name, equipment), notes, sets(weight, reps, weight_unit, set_number)
+                    )`
+                ).eq('id', workoutId)
+                .single()
+
+            if (error) {
+                throw new Error(`Database error: ${error.message}`);
+            }
+
+            const exercises: ModelPastExercise[] = data.exercises_done_in_workout.map(exercise => {
+                const { exercise_info, notes, sets } = exercise;
+
+                const { name, equipment } = exercise_info || { name: '', equipment: '' };
+
+                const mappedSets: ModelPastSet[] = sets.map(set => {
+                    const { weight, reps, weight_unit, set_number } = set;
+                    const pastSet = new ModelPastSet(weight, reps, weight_unit, set_number);
+                    return pastSet;
+                });
+
+                // Creating a new ModelPastExercise instance with the extracted data
+                const pastExercise = new ModelPastExercise(name, equipment, notes || null, mappedSets);
+
+                return pastExercise;
+            });
+
+            const { id, workout_type: type, workout_date: date, duration, workout_name: name } = data;
+
+            const pastWorkout: ModelPastWorkout<ModelPastExercise> = new ModelPastWorkout<ModelPastExercise>(id, type, date, name, duration, exercises)
+
+            return pastWorkout;
+
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Database error: ${errorMessage}`);
+        }
+    }
 
     // Other database interaction methods...
 }
