@@ -2,9 +2,6 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import ModelPreviousSet from '../ModelsGET/ModelPreviousSet';
-import ModelWorkoutHistory from '../ModelsGET/ModelWorkoutHistory';
-import ModelExerciseHistory from '../ModelsGET/ModelExerciseHistory';
-import ModelSetHistory from '../ModelsGET/ModelSetHistory';
 import ModelExerciseInList from '../ModelsGET/ModelExerciseInList';
 import ModelPostCompletedWorkout from '../ModelsPOST/ModelPostCompletedWorkout';
 import ModelPostedWorkout from '../ModelsPOST/ModelPostedWorkout';
@@ -127,7 +124,7 @@ class Dao {
         }
     }
 
-    // Post completed sets for exercises posted in postCompletedExercisesToDB() to "sets" table. 
+    // Get previous sets for exercises  
     async getPreviousSetFromDB(exercise_id: number, set_number: number): Promise<ModelPreviousSet | null> {
         try {
 
@@ -178,12 +175,8 @@ class Dao {
                 .from('workouts')
                 .select(
                     `
-                    id, 
-                    workout_type, 
-                    workout_date,
-                    duration, 
-                    workout_name,
-                    exercises_done_in_workout!inner (exercise_info : all_exercises!inner (name, equipment), notes, sets(weight, reps, weight_unit, set_number)
+                    *,
+                    exercises_done_in_workout!inner (*, exercise_info : all_exercises!inner (*), sets!inner(*)
                     )`
                 ).order('id', { ascending: false })
                 .returns<ModelPastWorkout<ModelPastExercise>[]>();
@@ -256,7 +249,7 @@ class Dao {
         }
     }
 
-    // Get all past workouts 
+    // Get a workout by workout id with details
     async getWorkoutHistoryByWorkoutIdFromDB(workoutId: number): Promise<ModelPastWorkout<ModelPastExercise>> {
         try {
             const { data, error } = await this.supabase
@@ -305,6 +298,60 @@ class Dao {
             throw new Error(`Database error: ${errorMessage}`);
         }
     }
+
+    // Get latest exercise information from DB
+    async getLatestExerciseInfoFromDB(exerciseIds: number[]): Promise<ModelPastExercise[]> {
+        try {
+            const exercisesPromises: Promise<ModelPastExercise[]>[] = exerciseIds.map(async id => {
+                const { data, error } = await this.supabase
+                    .from('exercises_done_in_workout')
+                    .select(
+                        `
+                        id, 
+                        exercise_id,
+                        notes,
+                        exercise_info: all_exercises!inner(id, name, equipment),
+                        sets!inner(set_number, reps, weight, weight_unit)
+                        `
+                    )
+                    .eq('exercise_id', id)
+                    .order('id', { ascending: false })
+                    .limit(1);
+
+                if (error) {
+                    throw new Error(`Database error: ${error.message}`);
+                }
+
+                const pastExercises: ModelPastExercise[] = data.map(exercise => {
+                    const { exercise_id, exercise_info, sets, notes } = exercise;
+                    const { name, equipment } = exercise_info || { name: '', equipment: '' };
+
+                    const mappedSets: ModelPastSet[] = sets.map(set => {
+                        const { weight, reps, weight_unit, set_number } = set;
+                        return new ModelPastSet(weight, reps, weight_unit, set_number);
+                    });
+
+                    // Creating a new ModelPastExercise instance with the extracted data
+                    return new ModelPastExercise(name, equipment, null, mappedSets);
+                });
+
+                return pastExercises;
+            });
+
+            // Wait for all the promises to resolve
+            const exercisesResults: ModelPastExercise[][] = await Promise.all(exercisesPromises);
+
+            // Flatten the array of arrays into a single array
+            const allExercises: ModelPastExercise[] = exercisesResults.flat();
+
+            return allExercises;
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Database error: ${errorMessage}`);
+        }
+    }
+
+
 
     // Other database interaction methods...
 }

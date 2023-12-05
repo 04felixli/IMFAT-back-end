@@ -1,4 +1,4 @@
-// This model defines the structure of each exercise within the exercise list
+// This model defines the structure of each exercise within the list of exercises user can select from
 
 class ModelExerciseInList {
     id: number;

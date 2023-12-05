@@ -1,5 +1,4 @@
-// Structure of a past workout
-import ModelPastExercise from "./ModelPastExercise";
+// Structure of a past workout for workout history page
 
 class ModelPastWorkout<T> {
     id: number;

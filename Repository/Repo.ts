@@ -147,6 +147,22 @@ class Repo {
         }
     }
 
+    // Get a single workout history by workout id
+    async getLatestExerciseInfo(exerciseIds: number[]): Promise<ModelPastExercise[]> {
+        try {
+
+            const dao = new Dao();
+
+            const workout: ModelPastExercise[] = await dao.getLatestExerciseInfoFromDB(exerciseIds);
+
+            return workout;
+
+        } catch (error) {
+            const errorMessage: string = (error as any).message || 'An error occurred';
+            throw new Error(`Error posting exercises: ${errorMessage}`);
+        }
+    }
+
 
 }
 

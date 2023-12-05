@@ -1,4 +1,4 @@
-// Structure of past set done in exercise 
+// Structure of past set done in exercise for workout history page
 
 class ModelPastSet {
     weight: number;

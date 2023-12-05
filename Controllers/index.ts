@@ -39,8 +39,8 @@ router.post('/post_workout', async (req: Request, res: Response) => {
     }
 });
 
-// Route to get the "previous set"
-router.get('/get_previous_set', async (req: Request, res: Response) => {
+// Route to get a previous set given a set number and exercise id
+router.get('/get_set_from_set_number', async (req: Request, res: Response) => {
     try {
         const repo = new Repo();
 
@@ -101,6 +101,25 @@ router.get('/get_workout_history_by_workoutId', async (req: Request, res: Respon
         const workout = await repo.getWorkoutHistoryByWorkoutId(workoutId);
 
         res.json(workout);
+
+    } catch (error) {
+        // Type assertion to specify the error type as any
+        const errorMessage: string = (error as any).message || 'An error occurred';
+        res.status(500).json({ error: errorMessage });
+    }
+});
+
+// Route to get the information of the latest exercise information
+router.get('/get_latest_exercise_info', async (req: Request, res: Response) => {
+    try {
+        const repo = new Repo();
+
+        const exerciseIdsString: string = req.query.exercise_ids as string; // get the exercise ids as a string
+        const exerciseIdsArray: number[] = exerciseIdsString.split(',').map(Number); // parse string to number array
+
+        const prev_set = await repo.getLatestExerciseInfo(exerciseIdsArray);
+
+        res.json(prev_set);
 
     } catch (error) {
         // Type assertion to specify the error type as any

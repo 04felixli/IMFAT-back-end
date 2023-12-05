@@ -1,11 +1,9 @@
-// Structure of past exercise done in workout 
+// Structure of past exercise done in workout for workout history page
 import ModelPastSet from "./ModelPastSet";
 
 class ModelPastExercise {
-    exercise_info: {
-        name: string;
-        equipment: string;
-    };
+    name: string;
+    equipment: string;
     notes: string | null;
     sets: ModelPastSet[];
 
@@ -15,10 +13,8 @@ class ModelPastExercise {
         notes: string | null,
         sets: ModelPastSet[]
     ) {
-        this.exercise_info = {
-            name: name,
-            equipment: equipment
-        };
+        this.name = name;
+        this.equipment = equipment;
         this.notes = notes;
         this.sets = sets;
     }
