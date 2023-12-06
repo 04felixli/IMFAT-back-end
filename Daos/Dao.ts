@@ -261,7 +261,7 @@ class Dao {
                     workout_date,
                     duration, 
                     workout_name,
-                    exercises_done_in_workout!inner (exercise_info : all_exercises!inner (name, equipment), notes, sets(weight, reps, weight_unit, set_number)
+                    exercises_done_in_workout!inner (exercise_info : all_exercises!inner (id, name, equipment), notes, sets(weight, reps, weight_unit, set_number)
                     )`
                 ).eq('id', workoutId)
                 .single()
@@ -273,7 +273,7 @@ class Dao {
             const exercises: ModelPastExercise[] = data.exercises_done_in_workout.map(exercise => {
                 const { exercise_info, notes, sets } = exercise;
 
-                const { name, equipment } = exercise_info || { name: '', equipment: '' };
+                const { id, name, equipment } = exercise_info || { id: 0, name: '', equipment: '' };
 
                 const mappedSets: ModelPastSet[] = sets.map(set => {
                     const { weight, reps, weight_unit, set_number } = set;
@@ -282,7 +282,7 @@ class Dao {
                 });
 
                 // Creating a new ModelPastExercise instance with the extracted data
-                const pastExercise = new ModelPastExercise(name, equipment, notes || null, mappedSets);
+                const pastExercise = new ModelPastExercise(id, name, equipment, notes || null, mappedSets);
 
                 return pastExercise;
             });
@@ -300,6 +300,7 @@ class Dao {
     }
 
     // Get latest exercise information from DB
+    // The way I did this is hella stupid...need to optimize later 
     async getLatestExerciseInfoFromDB(exerciseIds: number[]): Promise<ModelPastExercise[]> {
         try {
             const exercisesPromises: Promise<ModelPastExercise[]>[] = exerciseIds.map(async id => {
@@ -309,7 +310,6 @@ class Dao {
                         `
                         id, 
                         exercise_id,
-                        notes,
                         exercise_info: all_exercises!inner(id, name, equipment),
                         sets!inner(set_number, reps, weight, weight_unit)
                         `
@@ -322,20 +322,45 @@ class Dao {
                     throw new Error(`Database error: ${error.message}`);
                 }
 
-                const pastExercises: ModelPastExercise[] = data.map(exercise => {
-                    const { exercise_id, exercise_info, sets, notes } = exercise;
-                    const { name, equipment } = exercise_info || { name: '', equipment: '' };
+                if (data.length === 0) {
+                    const { data, error } = await this.supabase
+                        .from('all_exercises')
+                        .select(
+                            `
+                            id, 
+                            name,
+                            equipment
+                            `
+                        )
+                        .eq('id', id)
+                        .single();
 
-                    const mappedSets: ModelPastSet[] = sets.map(set => {
-                        const { weight, reps, weight_unit, set_number } = set;
-                        return new ModelPastSet(weight, reps, weight_unit, set_number);
+                    if (error) {
+                        throw new Error(`Database error: ${error.message}`);
+                    }
+
+                    const { name, equipment } = data || { name: '', equipment: '' };
+
+                    const exerciseNeverDone: ModelPastExercise[] = [new ModelPastExercise(id, name, equipment, null, [])];
+
+                    return exerciseNeverDone;
+
+                } else {
+                    const pastExercises: ModelPastExercise[] = data.map(exercise => {
+                        const { exercise_id, exercise_info, sets } = exercise;
+                        const { name, equipment } = exercise_info || { name: '', equipment: '' };
+
+                        const mappedSets: ModelPastSet[] = sets.map(set => {
+                            const { weight, reps, weight_unit, set_number } = set;
+                            return new ModelPastSet(weight, reps, weight_unit, set_number);
+                        });
+
+                        // Creating a new ModelPastExercise instance with the extracted data
+                        return new ModelPastExercise(id, name, equipment, null, mappedSets);
                     });
 
-                    // Creating a new ModelPastExercise instance with the extracted data
-                    return new ModelPastExercise(name, equipment, null, mappedSets);
-                });
-
-                return pastExercises;
+                    return pastExercises;
+                }
             });
 
             // Wait for all the promises to resolve
@@ -345,6 +370,7 @@ class Dao {
             const allExercises: ModelPastExercise[] = exercisesResults.flat();
 
             return allExercises;
+
         } catch (error) {
             const errorMessage: string = (error as any).message || 'An error occurred';
             throw new Error(`Database error: ${errorMessage}`);

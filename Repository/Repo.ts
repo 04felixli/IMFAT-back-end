@@ -159,7 +159,7 @@ class Repo {
 
         } catch (error) {
             const errorMessage: string = (error as any).message || 'An error occurred';
-            throw new Error(`Error posting exercises: ${errorMessage}`);
+            throw new Error(`Error getting latest exercise info: ${errorMessage}`);
         }
     }
 
