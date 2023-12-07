@@ -341,7 +341,9 @@ class Dao {
 
                     const { name, equipment } = data || { name: '', equipment: '' };
 
-                    const exerciseNeverDone: ModelPastExercise[] = [new ModelPastExercise(id, name, equipment, null, [])];
+                    const emptySet: ModelPastSet[] = [new ModelPastSet(-1, -1, 'lbs', 1)]; // dummy set 
+
+                    const exerciseNeverDone: ModelPastExercise[] = [new ModelPastExercise(id, name, equipment, null, emptySet)];
 
                     return exerciseNeverDone;
 
