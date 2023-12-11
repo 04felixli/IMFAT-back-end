@@ -2,20 +2,20 @@
 import ModelPastSet from "./ModelPastSet";
 
 class ModelPastExercise {
-    exercise_id: number;
+    id: number;
     name: string;
     equipment: string;
     notes: string | null;
     sets: ModelPastSet[];
 
     constructor(
-        exercise_id: number,
+        id: number,
         name: string,
         equipment: string,
         notes: string | null,
         sets: ModelPastSet[]
     ) {
-        this.exercise_id = exercise_id;
+        this.id = id;
         this.name = name;
         this.equipment = equipment;
         this.notes = notes;
